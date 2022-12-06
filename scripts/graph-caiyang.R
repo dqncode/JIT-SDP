@@ -89,8 +89,7 @@ GetOverall <- function(data, xnames, base, fname, pth=0.05, mth=c("negligible"))
   }
   
   return(data.frame(overall=overall, colsall=colsall, stringsAsFactors=FALSE))
-  #返回值只有颜色和差异度（√，???，-）
-  #之前的那些验证也是为了求出来这两个值
+  #return（√，???，-）
 }
 
 
@@ -100,7 +99,6 @@ plot_hist_single <- function(validation=validation, criteria=criteria,method=met
   mnames<- c("none","rum","nm","enn","tlr","rom","cnn","smo","bsmote","csmote","cenn")
   cnames<- paste(mnames, criteria, sep=".") 
   
-  #gmnames=c("None","RUM","NearMiss","Edited Nearest Neighbor","Tomek Link Removal","ROM","Condense Nearest Neighbor","SMOTE","Borderline-SMOTE","SMOTE+Tomek Link Removal","SMOTE+ENN")
   gmnames=c("None","RUM","NearMiss","ENN","TomekLink","ROM","CNN","SMOTE","BSMOTE","SMOTE+Tomek","SMOTE+ENN")
   title <- NULL
   n.row <- length(projects)
@@ -118,7 +116,6 @@ plot_hist_single <- function(validation=validation, criteria=criteria,method=met
       mname <- mnames[j]
       out.fname <- sprintf(paste(infpath, "%s-%s-%s.csv", sep="/"), method,project,mname)
       idata <- read.csv(out.fname)
-      ####取出某一个指标的结果
       idata<-idata[,criteria]
       rdata=cbind(rdata, idata )
       colnames(rdata)[j] <-paste(mname, criteria, sep=".")
@@ -132,40 +129,20 @@ plot_hist_single <- function(validation=validation, criteria=criteria,method=met
   colsall <- overall
   for (i in seq(projects)) {
     project <- projects[i]
-    # s.index <- which.max(apply(data.a ll[[i]][, smnames, drop=FALSE], 2, median))
-    #这一行是为了找出来最优的监督学习的方法，对应文论中的箱图的基线
-    #这里把PL作为对比方法，所以把这一行省略掉，base直接等于data.all[[i]][, 22]，PL那一列
     ares <- GetOverall(data=data.all[[i]], xnames=cnames, base=data.all[[i]][, 1], fname=sprintf("results/%s-all-out-%s.csv", project, criteria))
     overall[, i] <- ares$overall
     colsall[, i] <- ares$colsall
   }
-  
   zhongzhi<- apply(data[, cnames, drop=FALSE], 2, median)
-  #s.index <- which.max(zhongzhi)
-  #abline(h=zhongzhi[s.index][[1]],lty=3)取最好的中值做虚线，这个要放在下边，图画出来之后
-  #取最好的作为对比，做出来那条 虚线
-  #取某一行，就直接
-  #取最后一个的中值
-  #上边三行，取出最大的中值
   ares <- GetOverall(data=data, xnames=cnames, base=data[, 1], fname=sprintf("results/(%s)all-out-%s.csv", method, criteria))
   overall <- cbind(overall, ares$overall)
   colsall <- cbind(colsall, ares$colsall)
-  ###overall前六列是每一个数据集的√，×，—值，第七列是data（所有数据里按列合并）的那些值
-  ###colsall前六列是每一个数据集的颜色，第七列是data（所有数据里按列合并）颜色值
-  ### write.table(overall, file=sprintf("results/(%s)all-%s.csv", validation, criteria), row.names=TRUE,  col.names=TRUE,  append=FALSE, sep=",")
-  # len <- length(smnames)+1
-  # pos <- c(1:len, (len+2):(len+14))
-  # 
-  #png(file=sprintf(paste(outfpath,method,"hist-%s-%s.png",  sep="/"),  method,criteria), width=3, height=1.0, units="in", res=600, pointsize=10)
   pdf(file=sprintf(paste(outfpath,method,"hist-%s-%s.pdf",  sep="/"),  method,criteria), width=3.5, height=0.58)
-  
   par(mfrow=c(1, 1), mai=c(0, 0, 0.1, 0), omi=c(0.18, 0.15, 0, 0), mex=0.4, cex=0.5)
-  #画布下，左，上，右
   ylab.names <- projects
   cols <- colsall[, length(projects)+1]
-  #length(projects)+1存储所有数据集的均值颜色
   boxplot(data[, cnames], xlab=NA, ylab=NA, xaxt="n", yaxt="n",  border=cols, boxwex=0.6, frame=FALSE, outline=FALSE) ### xlim=c(2, len+12),
-  ### tck: length of tick marks记号长度 ### las: vertical or horizontal垂直/水平
+  ### tck: length of tick marks ### las: vertical or horizontal
   #lwd
   axis(2, mgp=c(0.5, 0.5, 0), las=0, tck=-0.02, cex.axis=0.8, lwd=1.0)
   box(bty="L", lwd=1.5)
@@ -178,22 +155,18 @@ plot_hist_single <- function(validation=validation, criteria=criteria,method=met
 }
 
 
-infpath <- "D:/software_defect-caiyang/output"  ## using LOC
-outfpath <- "D:/software_defect-caiyang/results"
+infpath <- "../output"  ## using LOC
+outfpath <- "../results"
 
 
 titlenames=c("Recall@20%","Precision@20%","F-measure@20%","PCI@20%","IFA","Popt","Recall@20%","Precision@20%","F-measure@20%","PCI@20%","IFA","Popt","Recall","Precision","Accuracy","F-measure","Pf","G1","AUC","MCC")
 
-#titlenames=c("EA_Recall","EA_Precision","EA_Fmeasure","PMI","IFA","Popt","EA_Recall","EA_Precision","EA_Fmeasure","PMI","IFA","Popt","Recall","Precision","Accuracy","Fmeasure","Pf","G1","AUC","MCC")
-#titlenames=c("AUC")
 methods<- c("RF","LR","NB")
-#methods<- c("LR")
 projects <- c("fabric","jgroups","camel","tomcat","brackets","neutron","spring-integration","broadleaf","nova","npm")
 
-#主函数
+#main
 for (method in methods){
   criterias <- c("Erecall","Eprecision","Efmeasure","ePMI","eIFA","ePopt","cErecall","cEprecision","cEfmeasure","cPMI","cIFA","cPopt","recall","precision","accuracy","F1","Pf","G1","AUC" , "MCC")
-  #criterias <- c( "AUC")
   for (i in seq(criterias)) {
     criteria <- criterias[i]
     titlename<- titlenames[i]
